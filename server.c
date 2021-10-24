@@ -148,12 +148,39 @@ int main()
 
                                 closedir(pid_dir);  //inchidere director /proc/<pid>
 
-                                printf("Informatiile despre pidul %s sunt: \n%s", pid_value, information);
+                                int lung = strlen(information);
+
+                                //conversie int lung in char lung[]
+                                char buf[3];
+                                buf[0] = '\0';
+                                
+                                sprintf(buf, "%d", lung);
+
+                                // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
+                                if ((num2 = write(fd2, buf, 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                    perror("[S] Problema la scriere in FIFO! \n");
+                                
+                                sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                                
+                                // trimit mesajul
+                                if ((num2 = write(fd2, information, strlen(information))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                    perror("[S] Problema la scriere in FIFO! \n");
                             }
                             else
                             if (ENOENT == errno) /* Directorul pid_dir nu exista */
                             { 
-                                printf("Directorul (cu pid) numele \"%s\" nu exista! \n", path);
+                                printf("[S] Directorul (cu pid) numele \"%s\" nu exista! \n", path);
+                                
+                                // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
+                                if ((num2 = write(fd2, "26", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                    perror("[S] Problema la scriere in FIFO! \n");
+                                
+                                sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                                
+                                // trimit mesajul
+                                char msg[300] = "Pid-ul introdus nu exista!";
+                                if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                    perror("[S] Problema la scriere in FIFO! \n");
                             } 
                             else /* eroare la opendir()*/
                             {
@@ -226,9 +253,9 @@ int main()
                             perror("[S] Problema la scriere in FIFO! \n");
                     }
                 }
-// COMANDA LOGIN   - !!!!!!!!!!!!!!!!!MODIFICA PENTRU CA EXECUTIA SA FIE FACUTA IN COPIL!!!!!!!!!!!!!!!!!!!!!!!!!!
                 else
-                if((ptr = strstr(cs, "login : ")) != NULL) // comanda scrisa corect
+// COMANDA LOGIN   - !!!!!!!!!!!!!!!!!MODIFICA PENTRU CA EXECUTIA SA FIE FACUTA IN COPIL!!!!!!!!!!!!!!!!!!!!!!!!!!
+                if((ptr = strstr(cs, "login : ")) != NULL)
                 {
                     printf("[S] ---Apelare functie \"login : username\"!--- \n");
 
