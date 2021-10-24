@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/wait.h>
+#include <dirent.h>
 
 #define FIFO_CS "C-S_FIFO"
 #define FIFO_SC "S-C_FIFO"
@@ -25,9 +27,8 @@ int main()
     printf("[C] Introduceti comanda...\n");
     printf("[C] 1) login : username     [Atentie: Limitare lungime username de 30 de caractere!] \n");
     printf("[C] 2) get-proc-info \n");
-    printf("[C] 3) get-logged-users \n");
-    printf("[C] 4) logout \n");
-    printf("[C] 5) quit \n\n");
+    printf("[C] 3) logout \n");
+    printf("[C] 4) quit \n\n");
 
     while (gets(cs), !feof(stdin)) 
     {
