@@ -46,7 +46,7 @@ int main()
                 cs[num1] = '\0';
 
                 /* PRELUCRARE COMENZI PRIMITE DE LA CLIENT : */
-            
+
                 // COMANDA QUIT
                 if(strcmp(cs,"quit") == 0)
                 {
@@ -58,14 +58,36 @@ int main()
                 if(strcmp(cs,"logout") == 0)
                 {
                     printf("[S] S-a apelat functia \"logout\"! \n");
-                    if(logat == 0)
+                    if(logat == 0)  //nu e logat
                     {
                         printf("[S] Eroare: Userul nelogat vrea sa se delogheze! \n");
+                      
+                        // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
+                        if ((num2 = write(fd2, "54", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                            perror("[S] Problema la scriere in FIFO! \n");
+                        
+                        sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                        
+                        // trimit mesajul
+                        char msg[300] = "Trebuie sa fiti logati pentru a folosi comanda logout!";
+                        if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                            perror("[S] Problema la scriere in FIFO! \n");
                     }
                     else
                     {
                         logat = 0;
                         printf("[S] User-ul a fost delogat \n");
+                        
+                        // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
+                        if ((num2 = write(fd2, "30", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                            perror("[S] Problema la scriere in FIFO! \n");
+                        
+                        sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                        
+                        //trimit mesajul
+                        char msg[300] = "Ati fost delogat de pe server!";
+                        if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                            perror("[S] Problema la scriere in FIFO! \n");
                     }
                 }
                 else
@@ -81,19 +103,23 @@ int main()
                         char user[userlength];
                         strcpy(user,cs + 8);
 
-
-                        if(logat == 1)
+                        if(logat == 1) // daca sunt logat deja, inseamna ca nu ma mai loghez din nou.
                         {
                             printf("[S] Userul \"%s\" este deja logat! \n", user);
 
-                            // daca sunt logat deja, inseamna ca nu ma mai loghez din nou.
+                            // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
+                            if ((num2 = write(fd2, "30", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                perror("[S] Problema la scriere in FIFO! \n");
                             
+                            sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                             
+                            // trimit mesajul
+                            char msg[300] = "Sunteti deja logati pe server!";
+                            if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                perror("[S] Problema la scriere in FIFO! \n");                            
                         }
-                        else
+                        else //inseamna ca nu sunt logat => caut daca exista username
                         {
-                            //inseamna ca nu sunt logat => caut daca exista username
-
                             // prelucrare username
                             FILE* fis = fopen(USERS_LIST,"r"); // deschid lista de useri in modul read pt a face cautarea
                             if(fis == NULL)  //eroare open fisier
@@ -116,20 +142,71 @@ int main()
                                         printf("[S] User-ul \"%s\" s-a conectat la server! \n", name);
                                         logat = 1;
                                         fclose(fis);
+
+                                        // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
+                                        if ((num2 = write(fd2, "22", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                            perror("[S] Problema la scriere in FIFO! \n");
+                                        
+                                        sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                                        
+                                        // trimit mesajul
+                                        char msg[300] = "V-ati logat cu succes!";
+                                        if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                            perror("[S] Problema la scriere in FIFO! \n");  
                                         break;
                                     }
                                 }
                                 if(logat == 0)
-                                    if(strlen(user) > 0)
-                                        printf("Userul \"%s\" nu a fost gasit in lista! \n",user);
+                                {
+                                    if(strlen(user) > 0) // user valid dar nu exista in lista
+                                    {
+                                        printf("[S] Userul \"%s\" nu a fost gasit in lista! \n",user);
+
+                                        // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
+                                        if ((num2 = write(fd2, "28", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                            perror("[S] Problema la scriere in FIFO! \n");
+                                        
+                                        sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                                        
+                                        // trimit mesajul
+                                        char msg[300] = "Username-ul nu a fost gasit!";
+                                        if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                            perror("[S] Problema la scriere in FIFO! \n"); 
+                                    }
                                     else
-                                        printf("Introduceti un username valabil \n");
+                                    if(strlen(user) > 30 || strlen(user) <= 0) // username invalid
+                                    {
+                                        printf("[S] User-ul a introdus un username invalid \n");
+
+                                        // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
+                                        if ((num2 = write(fd2, "116", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                            perror("[S] Problema la scriere in FIFO! \n");
+                                        
+                                        sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                                        
+                                        // trimit mesajul
+                                        char msg[300] = "Ati introdus un username invalid! Lungimea admisa pentru username este de minim 1 caracter si maxim 30 de caractere.";
+                                        if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                            perror("[S] Problema la scriere in FIFO! \n"); 
+                                    }
+                                }     
                             }
                         }
                     }
-                    else
+                    else // comanda gresita
                     {
-                        printf("[S] Comanda introdusa gresit! Introduceti din nou comanda \n");
+                        printf("[S] Comanda introdusa gresit. \n");
+
+                        // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
+                        if ((num2 = write(fd2, "32", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                            perror("[S] Problema la scriere in FIFO! \n");
+                        
+                        sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                        
+                        // trimit mesajul
+                        char msg[300] = "Ati introdus o comanda invalida!";
+                        if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                            perror("[S] Problema la scriere in FIFO! \n"); 
                     }
                 }  
             }  
