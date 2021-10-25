@@ -108,7 +108,7 @@ int main()
                 if((ptr = strstr(cs, "login : ")) != NULL)
                 {
                     printf("[S] ---Apelare functie \"login : username\"!--- \n");
-                    printf("val logat in login() = %d \n", logat);
+
                     // aflare username
                     int userlength = strlen(cs) - 8 + 1;
                     char user[userlength];
@@ -136,6 +136,8 @@ int main()
                             idee adaptata
                         */
 
+                        printf("[S] Verificare username: \"%s\"... \n", user);
+                        
                         int sockp[2], child; 
 
                         if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockp) < 0) 
@@ -161,6 +163,7 @@ int main()
                             raspuns[strlen(raspuns)] = '\0';
                             if(strcmp(raspuns,"DA") == 0)
                             {
+                                printf("[S] Userul \"%s\" s-a logat cu succes! \n", user);
                                 logat = 1;
 
                                 if ((num2 = write(fd2, "22", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
@@ -175,6 +178,7 @@ int main()
                             else
                             {
                                 logat = 0;
+                                printf("[S] Userul \"%s\" nu a fost logat. Username inexistent.\n", user);
                                 
                                 if ((num2 = write(fd2, "32", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                                     perror("[S] Problema la scriere in FIFO! \n");
@@ -222,8 +226,6 @@ int main()
                                     }
                                 }
 
-                                // trimti 2 octeti cu mesaj nu
-                                printf("[S] Username-ul introdus nu exista! \n");
 
                                 if (write(sockp[0], "NU", sizeof("NU")) < 0)   // cati bytes va citi tatal
                                     perror("[S] Eroare write la socket in copil!\n");
@@ -416,7 +418,6 @@ int main()
                     }
                     else  //inseamna ca nu-s logat, deci nu pot folosi comanda
                     {
-                        printf("val lui logat= %d \n", logat);
                         printf("[S] User-ul nelogat nu poate apela functia \"get_proc_info : pid\"\n");
 
                         // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
