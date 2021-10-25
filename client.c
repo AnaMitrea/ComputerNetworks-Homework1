@@ -32,14 +32,6 @@ int main()
 
     while (gets(cs), !feof(stdin)) 
     {
-        // QUIT -oprirea directa a programului
-        if(strcmp(cs, "quit") == 0)  // introducere comanda quit
-        {
-            if ((num1 = write(fd1, "quit", strlen("quit"))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
-                perror("[C] Problema la scriere in FIFO! \n");
-            return 0;
-        }
-
         /* Trimitere comanda catre server*/
         int cs_length = strlen(cs);  //lungimea comenzii ce se va trimite
         char char_length[3];  // lungimea comenzii scrisa ca sir de ch
@@ -57,7 +49,7 @@ int main()
 
 
         /* Primire raspuns de la server*/
-
+        // QUIT -oprirea directa a programului
         if ((num2 = read(fd2, sc, 3)) == -1)  // se citeste ce s-a scris in fifo si num contine cati bytes s-au citit
             perror("[C] Eroare la citirea din FIFO!");
         else
