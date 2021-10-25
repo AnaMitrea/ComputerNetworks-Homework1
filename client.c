@@ -76,13 +76,3 @@ int main()
         }
     }
 }
-
-/*
-
---------------------------------
-if ((num = write(fd1, cs, strlen(cs))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
-    perror("[C] Problema la scriere in FIFO!");
-else
-    printf("[C->S] S-au scris in FIFO %d bytes\n", num);
--------------------------------
-*/

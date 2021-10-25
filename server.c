@@ -62,142 +62,182 @@ int main()
                     printf("[S] S-a apelat functia \"get_proc_info : <pid>\"!\n");
                     if(logat == 1)
                     {
-                        char proc_dir[6] = "/proc";
-                        char pid_value[10]; 
-                        strcpy(pid_value, cs+16); //valoarea pidului
-                        char path[20];
 
-                        /*  
-                            https://stackoverflow.com/questions/12510874/how-can-i-check-if-a-directory-exists
-                            idee adaptata
-                        */
+                        int fileD[2];  // 0-input, 1-output
+                        pipe(fileD);  //
+                        pid_t Pid = fork();
 
-                        DIR* dir = opendir(proc_dir);
-
-                        if (dir) /* Directorul exista */
+                        if(Pid > 0)  // procesul TATA
                         {
-                            printf("[S] Directorul cu numele \"%s\" exista! \n", proc_dir);
-                            printf("[S] S-a scris pid-ul \"%s\"!\n", pid_value);
+                            wait(NULL); //asteapta raspunsul din copil
+                            
+                            close(0);  // inchid capatul standard input
 
-                            //construire calea directorului /proc/<pid>
-                            path[0] = '\0';
-                            strcat(path,proc_dir);
-                            strcat(path,"/");
-                            strcat(path,pid_value);
+                            close(fileD[1]); // inchid capat de scriere a pipe-ului
+                        
+                            dup(fileD[0]); // duplic fd[0] cu standard input 0
 
-                            printf("[S] Path-ul pidului in director este: \"%s\"  \n", path);        
 
-                            //verific daca directorul /proc/<pid> exista
-                            DIR* pid_dir = opendir(path);
-                            if(pid_dir)
-                            {
-                                printf("[S] Directorul /proc/<pid> cu numele \"%s\" exista! \n", path);
+                            //primire mesaj de la copil
 
-                                char status_file[30]; //calea /proc/<pid>/status
+                            char lungime[3];
+                            lungime[0] = '\0';
+                            read(fileD[0], lungime, sizeof(lungime));  //citesc in char[] cati bytes are raspunsul functiei
 
-                                status_file[0] = '\0';
+                            int nr_bytes = 0;
+                            sscanf(lungime, "%d", &nr_bytes);  //conversie char array to int
+                            
+                            char raspuns[nr_bytes + 1];
+                            read(fileD[0], raspuns, sizeof(raspuns));
 
-                                strcat(status_file,path);
-                                strcat(status_file,"/status");
 
-                                printf("[S] Path-ul catre status este: \"%s\"  \n", status_file);
+                            // trimitere mesaj de la tata catre client
 
-                                // cautare name, state, ppid, uid si vmsize in fisierul /proc/<pid>/status  :
-                                FILE *fptr = fopen(status_file, "r");
-
-                                if (fptr == NULL)
-                                {
-                                    printf("Eroare la deschiderea fisierului: %s \n", status_file);
-                                    return 1;
-                                }
-                                
-                                char line[300];
-                                char information[300];
-                                information[0]='\0';
-
-                                // Cautare informatiei linie cu linie
-                                while (fgets(line, 300, fptr))
-                                {
-                                    if(strncmp(line, "Name:", 5) == 0)
-                                    {
-                                        strcat(information, line);
-                                    }
-                                    else
-                                    if(strncmp(line, "State:", 6) == 0)
-                                    {
-                                        strcat(information, line);
-                                    }
-                                    else
-                                    if(strncmp(line, "PPid:", 5) == 0)
-                                    {
-                                        strcat(information, line);
-                                    }
-                                    else
-                                    if(strncmp(line, "Uid:", 4) == 0)
-                                    {
-                                        strcat(information, line);
-                                    }
-                                    else
-                                    if(strncmp(line, "VmSize:", 7) == 0)
-                                    {
-                                        strcat(information, line);
-                                    }
-                                }
-                                
-                                fclose(fptr);  // inchidere fisier /proc/<pid>/status
-
-                                closedir(pid_dir);  //inchidere director /proc/<pid>
-
-                                int lung = strlen(information);
-
-                                //conversie int lung in char lung[]
-                                char buf[3];
-                                buf[0] = '\0';
-                                
-                                sprintf(buf, "%d", lung);
-
-                                // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
-                                if ((num2 = write(fd2, buf, 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
-                                    perror("[S] Problema la scriere in FIFO! \n");
-                                
-                                sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
-                                
-                                // trimit mesajul
-                                if ((num2 = write(fd2, information, strlen(information))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
-                                    perror("[S] Problema la scriere in FIFO! \n");
-                            }
-                            else
-                            if (ENOENT == errno) /* Directorul pid_dir nu exista */
-                            { 
-                                printf("[S] Directorul (cu pid) numele \"%s\" nu exista! \n", path);
-                                
-                                // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
-                                if ((num2 = write(fd2, "26", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
-                                    perror("[S] Problema la scriere in FIFO! \n");
-                                
-                                sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
-                                
-                                // trimit mesajul
-                                char msg[300] = "Pid-ul introdus nu exista!";
-                                if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
-                                    perror("[S] Problema la scriere in FIFO! \n");
-                            } 
-                            else /* eroare la opendir()*/
-                            {
-                                printf("Eroare la deschiderea directorului (cu pid) \"%s\" \n", path);
-                            }
-                            closedir(dir);  //inchidere director /proc
+                            // trimit la client cati bytes are mesajul scris de server
+                            if ((num2 = write(fd2, lungime, 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                perror("[S] Problema la scriere in FIFO! \n");
+                            
+                            sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                            
+                            // trimit la client mesajul
+                            if ((num2 = write(fd2, raspuns, strlen(raspuns))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                perror("[S] Problema la scriere in FIFO! \n");
                         }
-                        else 
-                        {   
-                            if (ENOENT == errno) /* Directory does not exist. */
-                            { 
-                                printf("Directorul cu numele \"%s\" nu exista! \n", proc_dir);
-                            } 
-                            else /* opendir() failed for some other reason. */
+                        else
+                        if(Pid == 0) // procesul COPIL
+                        {
+                            close(fileD[0]); // inchidere capat citire pipe
+                            close(1);   // inchidere capat scriere std
+                            dup(fileD[1]); // duplic fd[0] cu standard output 1
+
+                            
+                            char proc_dir[6] = "/proc";
+                            char pid_value[10]; 
+                            strcpy(pid_value, cs+16); //valoarea pidului
+                            char path[20];
+
+                            /*  
+                                https://stackoverflow.com/questions/12510874/how-can-i-check-if-a-directory-exists
+                                idee adaptata
+                            */
+
+                            DIR* dir = opendir(proc_dir);
+
+                            if (dir) /* Directorul exista */
                             {
-                                printf("Eroare la deschiderea directorului \"%s\" \n", proc_dir);
+                                //construire calea directorului /proc/<pid>
+                                path[0] = '\0';
+                                strcat(path,proc_dir);
+                                strcat(path,"/");
+                                strcat(path,pid_value);     
+
+                                //verific daca directorul /proc/<pid> exista
+                                DIR* pid_dir = opendir(path);
+                                if(pid_dir)  // fisierul exista
+                                {
+                                    char status_file[30]; //construiesc calea /proc/<pid>/status
+
+                                    status_file[0] = '\0';
+
+                                    strcat(status_file,path);
+                                    strcat(status_file,"/status");
+
+                                    // cautare name, state, ppid, uid si vmsize in fisierul /proc/<pid>/status  :
+                                    FILE *fptr = fopen(status_file, "r");
+
+                                    if (fptr == NULL)
+                                    {
+                                        perror("Eroare la deschiderea fisierului /proc/<pid>/status \n");
+                                        return 1;
+                                    }
+                                    
+                                    char line[300];
+                                    char information[1500];
+                                    information[0]='\0';
+
+                                    // Cautare informatiei linie cu linie
+                                    while (fgets(line, 300, fptr))
+                                    {
+                                        if(strncmp(line, "Name:", 5) == 0)
+                                        {
+                                            strcat(information, line);
+                                        }
+                                        else
+                                        if(strncmp(line, "State:", 6) == 0)
+                                        {
+                                            strcat(information, line);
+                                        }
+                                        else
+                                        if(strncmp(line, "PPid:", 5) == 0)
+                                        {
+                                            strcat(information, line);
+                                        }
+                                        else
+                                        if(strncmp(line, "Uid:", 4) == 0)
+                                        {
+                                            strcat(information, line);
+                                        }
+                                        else
+                                        if(strncmp(line, "VmSize:", 7) == 0)
+                                        {
+                                            strcat(information, line);
+                                        }
+                                    }
+                                    
+                                    
+                                    fclose(fptr);  // inchidere fisier /proc/<pid>/status
+                                    closedir(pid_dir);  //inchidere director /proc/<pid>
+                                    
+                                    //in information[] am raspunsul functiei
+                                    int lung = strlen(information);
+
+                                    //conversie int lung in char lung[]
+                                    char buf[3];
+                                    buf[0] = '\0';
+                                    
+                                    sprintf(buf, "%d", lung);
+
+                                // TRIMITERE RASPUNS CATRE TATA
+                                    write(1, buf, sizeof(buf));  //trimit mai intai la tata strlen(mesaj)
+                                    sleep(1);
+                                    write(1, information, sizeof(information));
+                                }
+                                else
+                                if (ENOENT == errno) /* Directorul pid_dir nu exista */
+                                {                                
+                                    // trimit cati bytes are mesajul scris de copil pt ca, tatal sa ii citeasca
+                                    char msg[300] = "Pid-ul introdus nu exista!";
+
+                                    write(1, "27", 3);  //trimit mai intai la tata strlen(mesaj)
+                                    sleep(1);
+                                    write(1, msg, sizeof(msg));
+                                } 
+                                else /* eroare la opendir()*/
+                                {
+                                    perror("Eroare la deschiderea directorului /proc/<pid>!\n");
+                                }
+                                closedir(dir);  //inchidere director /proc
                             }
+                            else 
+                            {   
+                                if (ENOENT == errno) /* Directorul nu exista */
+                                { 
+                                    perror("Directorul /proc nu exista! \n");
+                                } 
+                                else /* opendir() failed for some other reason. */
+                                {
+                                    perror("Eroare la deschiderea directorului /proc! \n");
+                                }
+                            }
+
+
+
+
+                            exit(1);  // inchidere copil pt a nu deveni zombie
+                        }
+                        else
+                        {
+                            perror("Eroare la fork()! \n");
                         }
                     }
                     else  //inseamna ca nu-s logat, deci nu pot folosi comanda
