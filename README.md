@@ -1,5 +1,8 @@
 # Proiect-Retele-de-calculatoare
 
+https://profs.info.uaic.ro/~computernetworks/cursullaboratorul.php
+
+
 RO:
 Dezvoltati doua aplicatii (denumite "client" si "server") ce comunica intre ele pe baza unui protocol care are urmatoarele specificatii:
 
