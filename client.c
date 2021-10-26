@@ -8,6 +8,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <dirent.h>
+#include <sys/socket.h>
+#include <sys/utsname.h>
+#include <utmp.h>
+#include <time.h>
 
 #define FIFO_CS "C-S_FIFO"
 #define FIFO_SC "S-C_FIFO"
@@ -26,9 +30,10 @@ int main()
     fd2 = open(FIFO_SC, O_RDONLY);  // se deschide fifo SERVER-CLIENT in modul citire
     printf("[C] Introduceti comanda...\n");
     printf("[C] 1) login : username     [Atentie: Limitare lungime username de 30 de caractere!] \n");
-    printf("[C] 2) get-proc-info \n");
-    printf("[C] 3) logout \n");
-    printf("[C] 4) quit \n\n");
+    printf("[C] 2) get-proc-info : <pid> \n");
+    printf("[C] 3) get-logged-users \n");
+    printf("[C] 4) logout \n");
+    printf("[C] 5) quit \n\n");
 
     while (gets(cs), !feof(stdin)) 
     {

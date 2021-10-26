@@ -9,6 +9,10 @@
 #include <sys/wait.h>
 #include <dirent.h>
 #include <sys/socket.h>
+#include <sys/utsname.h>
+#include <utmp.h>
+#include <time.h>
+
 
 #define FIFO_CS "C-S_FIFO"
 #define FIFO_SC "S-C_FIFO"
@@ -82,7 +86,7 @@ int main()
                         sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                         
                         // trimit mesajul
-                        char msg[300] = "Trebuie sa fiti logati pentru a folosi comanda logout!";
+                        char msg[] = "Trebuie sa fiti logati pentru a folosi comanda logout!";
                         if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");
                     }
@@ -98,16 +102,16 @@ int main()
                         sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                         
                         //trimit mesajul
-                        char msg[300] = "Ati fost delogat de pe server!";
+                        char msg[] = "Ati fost delogat de pe server!";
                         if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");
                     }
                 }
                 else
-// COMANDA LOGIN 
+// COMANDA LOGIN -> comunicare tata-copil prin socket
                 if((ptr = strstr(cs, "login : ")) != NULL)
                 {
-                    printf("[S] ---Apelare functie \"login : username\"!--- \n");
+                    printf("[S] S-a apelat functia \"login : username\"! \n");
 
                     // aflare username
                     int userlength = strlen(cs) - 8 + 1;
@@ -125,7 +129,7 @@ int main()
                         sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                         
                         // trimit mesajul
-                        char msg[300] = "Sunteti deja logati pe server!";
+                        char msg[] = "Sunteti deja logati pe server!";
                         if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");                            
                     }
@@ -236,7 +240,7 @@ int main()
                         } 
                     }
                 }
-// COMANDA GET-PROC-INFO : PID     
+// COMANDA GET-PROC-INFO : PID   -> comunicare tata-copil prin pipe  
                 else
                 if ((ptr = strstr(cs, "get-proc-info : ")) != NULL)   // get_proc_info : pid
                 {
@@ -386,7 +390,7 @@ int main()
                                 if (ENOENT == errno) /* Directorul pid_dir nu exista */
                                 {                                
                                     // trimit cati bytes are mesajul scris de copil pt ca, tatal sa ii citeasca
-                                    char msg[300] = "Pid-ul introdus nu exista!";
+                                    char msg[] = "Pid-ul introdus nu exista!";
 
                                     write(1, "27", 3);  //trimit mai intai la tata strlen(mesaj)
                                     sleep(1);
@@ -418,7 +422,7 @@ int main()
                     }
                     else  //inseamna ca nu-s logat, deci nu pot folosi comanda
                     {
-                        printf("[S] User-ul nelogat nu poate apela functia \"get_proc_info : pid\"\n");
+                        printf("[S] User-ul nelogat nu poate apela functia \"get_proc_info : pid\".\n");
 
                         // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
                         if ((num2 = write(fd2, "47", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
@@ -427,12 +431,141 @@ int main()
                         sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                         
                         // trimit mesajul
-                        char msg[300] = "Nu puteti apela functia daca nu sunteti logati!";
+                        char msg[] = "Nu puteti apela functia daca nu sunteti logati!";
                         if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");
                     }
                 }
-// COMENZI INVALIDE              
+// COMANDA GET-LOGGED-USERS
+                else
+                if(strcmp(cs,"get-logged-users") == 0)
+                {
+                    printf("[S] S-a apelat functia \"get-logged-users\"! \n");
+
+                    if(logat == 1)
+                    {
+                        /*
+                            idee adaptata dupa:
+                            https://stackoverflow.com/questions/31472040/program-to-display-all-logged-in-users-via-c-program-on-ubuntu
+                            si
+                            https://www.epochconverter.com/programming/c
+                        */
+                       
+                        int sockp[2], child; 
+
+                        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockp) < 0) 
+                        { 
+                            perror("[S] Eroare la socketpair!\n"); 
+                            exit(1); 
+                        }
+
+                        if ((child = fork()) == -1) 
+                            perror("[S] Eroare la fork() la login!\n"); 
+                        else 
+                        if (child)   //parinte 
+                        {
+                            close(sockp[0]); //inchidere capat write
+
+
+                            char nr_octeti_char[3];  //cati bytes trimite copilul (char[])                          
+                            
+                            if (read(sockp[1], nr_octeti_char, 3) < 0)  //cati bytes trimite copilul 
+                                perror("[S] Eroare citire in parinte la socket!\n");
+                            sleep(1);
+
+                            int nr_octeti_int;
+                            sscanf(nr_octeti_char,"%d", &nr_octeti_int);
+
+                            char raspuns[nr_octeti_int]; // informatia de la functie
+
+                            if (read(sockp[1], raspuns, sizeof(raspuns)) < 0)  //cati bytes trimite copilul 
+                                perror("[S] Eroare citire in parinte la socket!\n");
+                            
+                            raspuns[strlen(raspuns)]='\0';
+
+                            printf("[S] %s \n", raspuns);
+
+
+                            if ((num2 = write(fd2, nr_octeti_char, 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                            perror("[S] Problema la scriere in FIFO! \n");
+                            
+                            sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                        
+                            // trimit mesajul
+                            if ((num2 = write(fd2, raspuns, strlen(raspuns))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                                perror("[S] Problema la scriere in FIFO! \n");
+
+
+                            wait(NULL);
+                            close(sockp[1]);  //inchidere capat read
+                        }
+                        else  //copil
+                        {
+                            close(sockp[1]); //inchidere capat read
+
+                            char raspuns[300];
+
+                            struct utmp *n;
+                            setutent();  // file pointer la inceput
+                            n = getutent(); // se citeste o linie din file
+
+                            while(n) //citire linie cu linie pana se da de un user process
+                            {
+                                if(n->ut_type == USER_PROCESS)
+                                {
+                                    // conversie secunde (de la 1 ian 1970 pana la data de logare pe server) in data curenta
+                                    time_t time_entry = n->ut_tv.tv_sec;  
+                                    struct tm ts;  // strucg cu date calendaristice
+                                    
+                                    char data[30];
+
+                                    // Formatare in: "yyyy-mm-dd hh:mm:ss"
+                                    ts = *localtime(&time_entry);   // pune valoarea time_entry (secunde) in structura ts
+                                    strftime(data, sizeof(data), "%Y-%m-%d at %H:%M:%S", &ts); // face conversia de format
+
+                                    strcpy(raspuns,"Name: ");
+                                    strcat(raspuns, n->ut_user);
+                                    strcat(raspuns,"| Hostname: ");
+                                    strcat(raspuns, n->ut_host);
+                                    strcat(raspuns, "| Time Entry: ");
+                                    strcat(raspuns, data);
+
+                                    int len = strlen(raspuns);
+                                    char buf[3];
+                                    buf[0] = '\0';
+                                    sprintf(buf, "%d", len);  // conversie int to char array
+
+                                    
+                                    if (write(sockp[0], buf, sizeof(buf)) < 0)   // cati bytes va citi tatal
+                                        perror("[S] Eroare write la socket in copil!\n");
+                                    sleep(1);
+                                    if (write(sockp[0], raspuns, sizeof(raspuns)) < 0)
+                                        perror("[S] Eroare write la socket in copil!\n");
+                                }
+                                n = getutent();
+                            }
+
+                            close(sockp[0]);  //inchidere capat write
+                            exit(1);
+                        }
+                    }
+                    else  // nu se poate folosi functia daca user-ul nu este logat
+                    {
+                        printf("[S] User-ul nelogat nu poate apela functia \"get-logged-users\".\n");
+
+                        // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
+                        if ((num2 = write(fd2, "60", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                            perror("[S] Problema la scriere in FIFO! \n");
+                        
+                        sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
+                        
+                        // trimit mesajul
+                        char msg[] = "Nu puteti folosi \"get-logged-users\" daca nu sunteti logati!";
+                        if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                            perror("[S] Problema la scriere in FIFO! \n");
+                    }
+                }
+// COMENZI INVALIDE 
                 else 
                 {
                     printf("[S] User-ul a introdus o comanda gresita. \n");
@@ -444,7 +577,7 @@ int main()
                     sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                     
                     // trimit mesajul
-                    char msg[300] = "Ati introdus o comanda invalida!";
+                    char msg[] = "Ati introdus o comanda invalida!";
                     if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                         perror("[S] Problema la scriere in FIFO! \n"); 
                 }  
