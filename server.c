@@ -86,7 +86,7 @@ int main()
                         sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                         
                         // trimit mesajul
-                        char msg[] = "Trebuie sa fiti logati pentru a folosi comanda logout!";
+                        char msg[55] = "Trebuie sa fiti logati pentru a folosi comanda logout!";
                         if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");
                     }
@@ -102,7 +102,7 @@ int main()
                         sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                         
                         //trimit mesajul
-                        char msg[] = "Ati fost delogat de pe server!";
+                        char msg[31] = "Ati fost delogat de pe server!";
                         if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");
                     }
@@ -129,7 +129,7 @@ int main()
                         sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                         
                         // trimit mesajul
-                        char msg[] = "Sunteti deja logati pe server!";
+                        char msg[31] = "Sunteti deja logati pe server!";
                         if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");                            
                     }
@@ -390,7 +390,7 @@ int main()
                                 if (ENOENT == errno) /* Directorul pid_dir nu exista */
                                 {                                
                                     // trimit cati bytes are mesajul scris de copil pt ca, tatal sa ii citeasca
-                                    char msg[] = "Pid-ul introdus nu exista!";
+                                    char msg[27] = "Pid-ul introdus nu exista!";
 
                                     write(1, "27", 3);  //trimit mai intai la tata strlen(mesaj)
                                     sleep(1);
@@ -425,13 +425,13 @@ int main()
                         printf("[S] User-ul nelogat nu poate apela functia \"get_proc_info : pid\".\n");
 
                         // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
-                        if ((num2 = write(fd2, "47", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                        if ((num2 = write(fd2, "48", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");
                         
                         sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                         
                         // trimit mesajul
-                        char msg[] = "Nu puteti apela functia daca nu sunteti logati!";
+                        char msg[49] = "Nu puteti apela functia daca nu sunteti logati!";
                         if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");
                     }
@@ -476,14 +476,12 @@ int main()
                             int nr_octeti_int;
                             sscanf(nr_octeti_char,"%d", &nr_octeti_int);
 
-                            char raspuns[nr_octeti_int]; // informatia de la functie
+                            char raspuns[nr_octeti_int + 1]; // informatia de la functie
 
                             if (read(sockp[1], raspuns, sizeof(raspuns)) < 0)  //cati bytes trimite copilul 
                                 perror("[S] Eroare citire in parinte la socket!\n");
-                            
-                            raspuns[strlen(raspuns)]='\0';
 
-                            printf("[S] %s \n", raspuns);
+                            printf("[S] Informatia: \n %s \n", raspuns);
 
 
                             if ((num2 = write(fd2, nr_octeti_char, 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
@@ -521,13 +519,13 @@ int main()
 
                                     // Formatare in: "yyyy-mm-dd hh:mm:ss"
                                     ts = *localtime(&time_entry);   // pune valoarea time_entry (secunde) in structura ts
-                                    strftime(data, sizeof(data), "%Y-%m-%d at %H:%M:%S", &ts); // face conversia de format
+                                    strftime(data, sizeof(data), "%Y-%m-%d la %H:%M:%S", &ts); // face conversia de format
 
                                     strcpy(raspuns,"Name: ");
                                     strcat(raspuns, n->ut_user);
                                     strcat(raspuns,"| Hostname: ");
                                     strcat(raspuns, n->ut_host);
-                                    strcat(raspuns, "| Time Entry: ");
+                                    strcat(raspuns, " | Time Entry: ");
                                     strcat(raspuns, data);
 
                                     int len = strlen(raspuns);
@@ -560,7 +558,7 @@ int main()
                         sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                         
                         // trimit mesajul
-                        char msg[] = "Nu puteti folosi \"get-logged-users\" daca nu sunteti logati!";
+                        char msg[61] = "Nu puteti folosi \"get-logged-users\" daca nu sunteti logati!";
                         if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");
                     }
@@ -577,7 +575,7 @@ int main()
                     sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                     
                     // trimit mesajul
-                    char msg[] = "Ati introdus o comanda invalida!";
+                    char msg[33] = "Ati introdus o comanda invalida!";
                     if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                         perror("[S] Problema la scriere in FIFO! \n"); 
                 }  

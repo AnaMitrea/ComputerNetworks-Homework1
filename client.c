@@ -38,7 +38,6 @@ int main()
     while (gets(cs), !feof(stdin)) 
     {
 
-
         /* Trimitere comanda catre server*/
         int cs_length = strlen(cs);  //lungimea comenzii ce se va trimite
         char char_length[3];  // lungimea comenzii scrisa ca sir de ch
