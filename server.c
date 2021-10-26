@@ -120,7 +120,7 @@ int main()
 
                     if(logat == 1) // daca sunt logat deja, inseamna ca nu ma mai loghez din nou.
                     {
-                        printf("[S] Userul \"%s\" este deja logat! \n", user);
+                        printf("[S] User-ul este deja logat! \n");
 
                         // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
                         if ((num2 = write(fd2, "30", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
@@ -222,7 +222,7 @@ int main()
                                     {
 
                                         // transmit 2 octeti cu mesaj da
-                                        if (write(sockp[0], "DA", sizeof("DA")) < 0)   // cati bytes va citi tatal
+                                        if (write(sockp[0], "DA", strlen("DA")) < 0)   // cati bytes va citi tatal
                                             perror("[S] Eroare write la socket in copil!\n");
 
                                         fclose(fis);
@@ -231,7 +231,7 @@ int main()
                                 }
 
 
-                                if (write(sockp[0], "NU", sizeof("NU")) < 0)   // cati bytes va citi tatal
+                                if (write(sockp[0], "NU", strlen("NU")) < 0)   // cati bytes va citi tatal
                                     perror("[S] Eroare write la socket in copil!\n");
                             }
                             
@@ -478,7 +478,7 @@ int main()
 
                             char raspuns[nr_octeti_int + 1]; // informatia de la functie
 
-                            if (read(sockp[1], raspuns, sizeof(raspuns)) < 0)  //cati bytes trimite copilul 
+                            if (read(sockp[1], raspuns, sizeof(raspuns)) < 0) 
                                 perror("[S] Eroare citire in parinte la socket!\n");
 
                             printf("[S] Informatia: \n %s \n", raspuns);
@@ -552,13 +552,13 @@ int main()
                         printf("[S] User-ul nelogat nu poate apela functia \"get-logged-users\".\n");
 
                         // trimit cati bytes are mesajul scris de server pt ca, CLIENTUL sa ii citeasca
-                        if ((num2 = write(fd2, "60", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
+                        if ((num2 = write(fd2, "47", 3)) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");
                         
                         sleep(1);   // astept CLIENTUL sa primeasca lungimea mesajului
                         
                         // trimit mesajul
-                        char msg[61] = "Nu puteti folosi \"get-logged-users\" daca nu sunteti logati!";
+                        char msg[48] = "Nu puteti apela functia daca nu sunteti logati!";
                         if ((num2 = write(fd2, msg, strlen(msg))) == -1) // se scrie in fifo si in num am cati bytes s-au scris
                             perror("[S] Problema la scriere in FIFO! \n");
                     }
