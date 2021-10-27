@@ -55,7 +55,6 @@ int main()
 
 
         /* Primire raspuns de la server*/
-
         if ((num2 = read(fd2, sc, 3)) == -1)  // se citeste ce s-a scris in fifo si num contine cati bytes s-au citit
             perror("[C] Eroare la citirea din FIFO!");
         else

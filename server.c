@@ -436,7 +436,7 @@ int main()
                             perror("[S] Problema la scriere in FIFO! \n");
                     }
                 }
-// COMANDA GET-LOGGED-USERS
+// COMANDA GET-LOGGED-USERS -> comunicare tata-copil prin socket
                 else
                 if(strcmp(cs,"get-logged-users") == 0)
                 {
